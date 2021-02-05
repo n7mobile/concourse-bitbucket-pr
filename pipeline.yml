@@ -1,0 +1,26 @@
+resource_types:
+- name: bitbucket-pr
+  type: registry-image
+  source:
+    repository: n7mobile/ci-bitbucket-pr
+
+resources:
+- name: bitbucket-pr
+  type: bitbucket-pr
+  check_every: 5m
+  source:
+    workspace: n7mobile
+    slug: pr-test-repo
+    username: 
+    password: 
+    debug: true
+
+jobs:
+- name: do-it
+  plan:
+  - get: bitbucket-pr
+    trigger: true
+  - put: bitbucket-pr
+    params:
+      version_path: bitbucket-pr/version
+      status: test
