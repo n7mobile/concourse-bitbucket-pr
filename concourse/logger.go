@@ -1,10 +1,12 @@
-package resource
+package concourse
 
 import (
 	"fmt"
 	"os"
 )
 
+// Logger prints message on proper concource output stream
+// Simplified adoption of https://github.com/cloudboss/ofcourse
 type Logger struct {
 	Debug bool
 }

@@ -1,19 +1,18 @@
 package resource
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
 	git "github.com/libgit2/git2go/v31"
 	"github.com/n7mobile/ci-bitbucket-pr/bitbucket"
+	"github.com/n7mobile/ci-bitbucket-pr/concourse"
 	"github.com/n7mobile/ci-bitbucket-pr/resource/models"
 )
 
 type InCommand struct {
-	Logger *Logger
+	Logger *concourse.Logger
 }
 
 func (cmd *InCommand) Run(destination string, req models.InRequest) (models.InResponse, error) {
@@ -37,7 +36,12 @@ func (cmd *InCommand) Run(destination string, req models.InRequest) (models.InRe
 
 	cmd.Logger.Debugf("Repository checkout...")
 
-	url := bitbucket.RepositoryURL(req.Source.Workspace, req.Source.Slug)
+	auth := bitbucket.Auth{
+		Username: req.Source.Username,
+		Password: req.Source.Password,
+	}
+
+	url := bitbucket.NewClient(req.Source.Workspace, req.Source.Slug, &auth).RepoURL()
 
 	commit, err := cmd.gitCheckoutRef(req.Source.Username, req.Source.Password, url, req.Version.Branch, req.Version.Commit, destination)
 	if err != nil {
@@ -46,14 +50,16 @@ func (cmd *InCommand) Run(destination string, req models.InRequest) (models.InRe
 
 	cmd.Logger.Debugf("Checkout succeeded")
 
-	cmd.Logger.Debugf("Version write as file...")
+	if len(req.Params.VersionFilename) > 0 {
+		cmd.Logger.Debugf("Version write as file...")
 
-	err = cmd.writeVersion(&req.Version, destination)
-	if err != nil {
-		return models.InResponse{}, fmt.Errorf("version write: %w", err)
+		err = concourse.NewStorage(destination, req.Params.VersionFilename).Write(&req.Version)
+		if err != nil {
+			return models.InResponse{}, fmt.Errorf("version write: %w", err)
+		}
+
+		cmd.Logger.Debugf("Version write succeeded")
 	}
-
-	cmd.Logger.Debugf("Version write succeeded")
 
 	return models.InResponse{
 		Version: req.Version,
@@ -121,22 +127,4 @@ func (cmd *InCommand) gitCheckoutRef(user, pass string, url, branch, ref string,
 	}
 
 	return commit, nil
-}
-
-func (cmd *InCommand) writeVersion(version *models.Version, destination string) error {
-	bytes, err := json.Marshal(version)
-	if err != nil {
-		return fmt.Errorf("marshaling current version: %w", err)
-	}
-
-	path := fmt.Sprintf("%s/version", destination)
-
-	cmd.Logger.Debugf("\tWriting at path '%s' version data %s", path, string(bytes))
-
-	err = ioutil.WriteFile(path, bytes, 0644)
-	if err != nil {
-		return fmt.Errorf("WriteFile: %w", err)
-	}
-
-	return nil
 }

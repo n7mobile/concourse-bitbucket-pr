@@ -1,31 +1,34 @@
 package resource
 
 import (
+	"fmt"
+	"sort"
 	"strconv"
 
 	"github.com/n7mobile/ci-bitbucket-pr/bitbucket"
+	"github.com/n7mobile/ci-bitbucket-pr/concourse"
 	"github.com/n7mobile/ci-bitbucket-pr/resource/models"
 )
 
 type CheckCommand struct {
-	Logger *Logger
+	Logger *concourse.Logger
 }
 
 func (cmd *CheckCommand) Run(req models.CheckRequest) ([]models.Version, error) {
 	err := req.Source.Validate()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("resource/check: source invalid: %w", err)
 	}
 
-	qry := bitbucket.PullRequestQuery{
-		Workspace: req.Source.Workspace,
-		Slug:      req.Source.Slug,
+	auth := bitbucket.Auth{
+		Username: req.Source.Username,
+		Password: req.Source.Password,
 	}
 
-	client := bitbucket.NewBasicAuth(req.Source.Username, req.Source.Password)
-	preqs, err := client.GetPullRequests(&qry)
+	client := bitbucket.NewClient(req.Source.Workspace, req.Source.Slug, &auth)
+	preqs, err := client.GetPullRequestsPaged()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("resource/check: paged prs: %w", err)
 	}
 
 	versions := []models.Version{}
@@ -42,6 +45,12 @@ func (cmd *CheckCommand) Run(req models.CheckRequest) ([]models.Version, error) 
 			Branch: preq.Source.Branch.Name,
 		})
 	}
+
+	sort.Slice(versions, func(i int, j int) bool {
+		numI, _ := strconv.Atoi(versions[i].ID)
+		numJ, _ := strconv.Atoi(versions[j].ID)
+		return numI < numJ
+	})
 
 	return versions, nil
 }

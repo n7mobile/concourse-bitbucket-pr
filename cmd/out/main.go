@@ -5,13 +5,12 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/n7mobile/ci-bitbucket-pr/concourse"
 	"github.com/n7mobile/ci-bitbucket-pr/resource"
 	"github.com/n7mobile/ci-bitbucket-pr/resource/models"
 )
 
 func main() {
-	fmt.Fprintln(os.Stderr, "calling in cmd")
-
 	if len(os.Args) < 2 {
 		println("usage: " + os.Args[0] + " <destination>")
 		os.Exit(1)
@@ -29,15 +28,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	logger := resource.Logger{
+	logger := concourse.Logger{
 		Debug: request.Source.Debug,
 	}
 
 	command := resource.OutCommand{
-		Logger: logger,
+		Logger: &logger,
 	}
-
-	fmt.Fprintln(os.Stderr, "RUUUUUUN")
 
 	response, err := command.Run(request, destination)
 	if err != nil {

@@ -5,13 +5,12 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/n7mobile/ci-bitbucket-pr/concourse"
 	"github.com/n7mobile/ci-bitbucket-pr/resource"
 	"github.com/n7mobile/ci-bitbucket-pr/resource/models"
 )
 
 func main() {
-	fmt.Fprintln(os.Stderr, "calling check cmd")
-
 	var request models.CheckRequest
 
 	err := json.NewDecoder(os.Stdin).Decode(&request)
@@ -20,7 +19,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	logger := resource.Logger{
+	logger := concourse.Logger{
 		Debug: request.Source.Debug,
 	}
 
