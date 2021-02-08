@@ -1,35 +1,60 @@
 package bitbucket
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 )
 
 type endpoint string
 
 const (
 	pullRequestsEndpoint endpoint = "/pullrequests"
+	commitEndpoint       endpoint = "/commit"
+	commitsEndpoint      endpoint = "/commits"
 )
 
 const (
-	apiBaseUrl  string = "https://api.bitbucket.org/2.0/repositories"
-	repoBaseUrl string = "https://bitbucket.org"
+	apiBaseURL  string = "https://api.bitbucket.org/2.0/repositories"
+	repoBaseURL string = "https://bitbucket.org"
 )
 
 type Client struct {
-	username   string
-	password   string
+	auth       *Auth
+	repoPath   string
 	httpClient *http.Client
 }
 
-func NewBasicAuth(username, password string) *Client {
-	return &Client{username, password, &http.Client{}}
+type Auth struct {
+	Username string
+	Password string
 }
 
-func (c Client) apiURL(workspace, slug string, endpoint endpoint) string {
-	return fmt.Sprintf("%s/%s/%s%v", apiBaseUrl, workspace, slug, endpoint)
+type PagedResponse struct {
+	Size   int             `json:"size"`
+	Next   string          `json:"next"`
+	Values json.RawMessage `json:"values"`
 }
 
-func RepositoryURL(workspace, slug string) string {
-	return fmt.Sprintf("%s/%s/%s.git", repoBaseUrl, workspace, slug)
+func NewClient(workspace, slug string, auth *Auth) *Client {
+	return &Client{
+		auth:       auth,
+		repoPath:   fmt.Sprintf("/%s/%s", workspace, slug),
+		httpClient: &http.Client{},
+	}
+}
+
+func (c Client) APIURL(endpoint endpoint, components ...string) string {
+	url := apiBaseURL + c.repoPath + string(endpoint)
+
+	if len(components) > 0 {
+		url = url + "/" + strings.Join(components, "/")
+	}
+
+	return url
+}
+
+func (c Client) RepoURL() string {
+	return repoBaseURL + c.repoPath + ".git"
 }

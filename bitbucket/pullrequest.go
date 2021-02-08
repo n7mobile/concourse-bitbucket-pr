@@ -1,29 +1,30 @@
 package bitbucket
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 )
 
-type PullRequestQuery struct {
-	Workspace string `json:"workspace"`
-	Slug      string `json:"slug"`
-}
-
+// PullRequestState indicatees state of PullRequest
+// in contrast to state of single commit and it's CI build flow
 type PullRequestState string
 
 const (
-	OpenPullRequestState       PullRequestState = "OPEN"
-	MergedPullRequestState     PullRequestState = "MERGED"
-	SupersededPullRequestState PullRequestState = "SUPERSEDED"
-	DeclinedPullRequestState   PullRequestState = "DECLINED"
-)
+	// OpenPullRequestState as PR is open
+	OpenPullRequestState PullRequestState = "OPEN"
 
-type PullRequestResponse struct {
-	Size   int                 `json:"size"`
-	Next   string              `json:"next"`
-	Values []PullRequestEntity `json:"values"`
-}
+	// MergedPullRequestState as PR is already merged
+	MergedPullRequestState PullRequestState = "MERGED"
+
+	// SupersededPullRequestState as PR is superseded
+	SupersededPullRequestState PullRequestState = "SUPERSEDED"
+
+	// DeclinedPullRequestState as PR is declined
+	DeclinedPullRequestState PullRequestState = "DECLINED"
+)
 
 type PullRequestEntity struct {
 	ID              int              `json:"id"`
@@ -61,46 +62,64 @@ type GitBranch struct {
 	Name string `json:"name"`
 }
 
-// GetPullRequests fetches list of PR for given repository.
+// GetPullRequestsPaged fetches list of PR for given repository.
 // Results are autopaged
-func (c Client) GetPullRequests(q *PullRequestQuery) ([]PullRequestEntity, error) {
+func (c Client) GetPullRequestsPaged() ([]PullRequestEntity, error) {
 	values := make([]PullRequestEntity, 0)
 
-	url := c.apiURL(q.Workspace, q.Slug, pullRequestsEndpoint)
+	url := c.APIURL(pullRequestsEndpoint)
 
 	for ok := true; ok; ok = len(url) > 0 {
-		resp, err := c.getPullRequests(url)
+		resp, err := c.getPullRequestsSinglePage(url)
 		if err != nil {
 			return nil, err
 		}
 
-		values = append(values, resp.Values...)
+		var valuesPage []PullRequestEntity
+
+		err = json.Unmarshal([]byte(resp.Values), &valuesPage)
+		if err != nil {
+			return nil, fmt.Errorf("bitbucket/client: unmarshal paged values: %w", err)
+		}
+
+		values = append(values, valuesPage...)
 		url = resp.Next
 	}
 
 	return values, nil
 }
 
-func (c Client) getPullRequests(url string) (*PullRequestResponse, error) {
+func (c Client) getPullRequestsSinglePage(url string) (*PagedResponse, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("bitbucket/client: http req creation: %w", err)
 	}
 
-	req.SetBasicAuth(c.username, c.password)
+	req.SetBasicAuth(c.auth.Username, c.auth.Password)
 	req.Header.Set("Accept", "application/json")
 
 	res, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("bitbucket/client: http req to %s: %w", url, err)
 	}
 	defer res.Body.Close()
 
-	var pullRequestResponse PullRequestResponse
+	buf := new(bytes.Buffer)
 
-	err = json.NewDecoder(res.Body).Decode(&pullRequestResponse)
+	_, err = io.Copy(buf, res.Body)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("bitbucket/client: read body: %w", err)
+	}
+
+	if res.StatusCode != 200 {
+		return nil, fmt.Errorf("bitbucket/client: %s: %s, %s", res.Status, url, buf.Bytes())
+	}
+
+	var pullRequestResponse PagedResponse
+
+	err = json.NewDecoder(buf).Decode(&pullRequestResponse)
+	if err != nil {
+		return nil, fmt.Errorf("bitbucket/client: decode %s: %w", buf.Bytes(), err)
 	}
 
 	return &pullRequestResponse, nil

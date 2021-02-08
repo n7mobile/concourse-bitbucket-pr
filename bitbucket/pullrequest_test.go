@@ -6,14 +6,14 @@ import (
 )
 
 func TestGetPullRequests(t *testing.T) {
-	cli := NewBasicAuth("", "")
-
-	qry := &PullRequestQuery{
-		Workspace: "n7mobile",
-		Slug:      "pr-test-repo",
+	auth := Auth{
+		Username: "",
+		Password: "",
 	}
 
-	prs, err := cli.GetPullRequests(qry)
+	cli := NewClient("n7mobile", "n7mobile", &auth)
+
+	prs, err := cli.GetPullRequestsPaged()
 	if err != nil {
 		t.Error(err)
 	}
