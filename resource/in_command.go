@@ -11,10 +11,12 @@ import (
 	"github.com/n7mobile/ci-bitbucket-pr/resource/models"
 )
 
+// InCommand performs git checkout <commit_hash> into passed by Concourse destination directory
 type InCommand struct {
 	Logger *concourse.Logger
 }
 
+// Run InCommand processing.
 func (cmd *InCommand) Run(destination string, req models.InRequest) (*models.InResponse, error) {
 	err := req.Source.Validate()
 	if err != nil {

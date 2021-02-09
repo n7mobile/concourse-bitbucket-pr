@@ -10,11 +10,10 @@ import (
 
 // Version object used to uniquely identify an instance of the resource by ConcourseCI
 type Version struct {
-	Commit  string `json:"commit"`
-	ID      string `json:"id"`
-	Title   string `json:"title"`
-	Branch  string `json:"branch"`
-	Updated string `json:"updated"`
+	Commit string `json:"commit"`
+	ID     string `json:"id"`
+	Title  string `json:"title"`
+	Branch string `json:"branch"`
 }
 
 // Validate Version object against required fields

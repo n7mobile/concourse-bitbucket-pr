@@ -10,10 +10,12 @@ import (
 	"github.com/n7mobile/ci-bitbucket-pr/resource/models"
 )
 
+// CheckCommand fetches list of PullRequests form BitBucket API and traslates it list versions sorted by PR Identifier
 type CheckCommand struct {
 	Logger *concourse.Logger
 }
 
+// Run CheckCommand processing.
 func (cmd *CheckCommand) Run(req models.CheckRequest) ([]models.Version, error) {
 	err := req.Source.Validate()
 	if err != nil {
@@ -31,6 +33,10 @@ func (cmd *CheckCommand) Run(req models.CheckRequest) ([]models.Version, error) 
 		return nil, fmt.Errorf("resource/check: paged prs: %w", err)
 	}
 
+	sort.Slice(preqs, func(i int, j int) bool {
+		return preqs[i].UpdatedOn < preqs[j].UpdatedOn
+	})
+
 	versions := []models.Version{}
 
 	if len(req.Version.Commit) > 0 {
@@ -39,17 +45,12 @@ func (cmd *CheckCommand) Run(req models.CheckRequest) ([]models.Version, error) 
 
 	for _, preq := range preqs {
 		versions = append(versions, models.Version{
-			Commit:  preq.Source.Commit.Hash,
-			ID:      strconv.Itoa(preq.ID),
-			Title:   preq.Title,
-			Branch:  preq.Source.Branch.Name,
-			Updated: preq.UpdatedOn,
+			Commit: preq.Source.Commit.Hash,
+			ID:     strconv.Itoa(preq.ID),
+			Title:  preq.Title,
+			Branch: preq.Source.Branch.Name,
 		})
 	}
-
-	sort.Slice(versions, func(i int, j int) bool {
-		return versions[i].Updated < versions[j].Updated
-	})
 
 	return versions, nil
 }
