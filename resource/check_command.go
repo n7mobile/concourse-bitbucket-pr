@@ -39,17 +39,16 @@ func (cmd *CheckCommand) Run(req models.CheckRequest) ([]models.Version, error) 
 
 	for _, preq := range preqs {
 		versions = append(versions, models.Version{
-			Commit: preq.Source.Commit.Hash,
-			ID:     strconv.Itoa(preq.ID),
-			Title:  preq.Title,
-			Branch: preq.Source.Branch.Name,
+			Commit:  preq.Source.Commit.Hash,
+			ID:      strconv.Itoa(preq.ID),
+			Title:   preq.Title,
+			Branch:  preq.Source.Branch.Name,
+			Updated: preq.UpdatedOn,
 		})
 	}
 
 	sort.Slice(versions, func(i int, j int) bool {
-		numI, _ := strconv.Atoi(versions[i].ID)
-		numJ, _ := strconv.Atoi(versions[j].ID)
-		return numI < numJ
+		return versions[i].Updated < versions[j].Updated
 	})
 
 	return versions, nil

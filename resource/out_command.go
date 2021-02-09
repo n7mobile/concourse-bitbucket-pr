@@ -32,7 +32,7 @@ func (cmd *OutCommand) Run(req models.OutRequest, destination string) (*models.O
 
 	var version models.Version
 
-	err = concourse.NewStorage(destination, req.Params.VersionFilename).Read(&version)
+	err = concourse.NewStorage(destination, req.Params.VersionPath).Read(&version)
 	if err != nil {
 		return nil, fmt.Errorf("resource/out: version read: %w", err)
 	}
@@ -57,18 +57,18 @@ func (cmd *OutCommand) Run(req models.OutRequest, destination string) (*models.O
 	client := bitbucket.NewClient(req.Source.Workspace, req.Source.Slug, &auth)
 
 	statReq := bitbucket.CommitBuildStatusRequest{
-		Key:         "build",
+		Key:         bitbucket.BuildCommitBuildKey,
 		Name:        req.Params.Name,
 		Description: req.Params.Description,
 		URL:         req.Params.URL,
 		State:       bitbucket.CommitBuildStatus(req.Params.Status),
 	}
 
-	cmd.Logger.Debugf("Setting commit %s build status to %s", hash, statReq.State)
+	cmd.Logger.Debugf("resource/out: set status %s", statReq.State)
 
 	err = client.SetCommitBuildStatus(version.Commit, &statReq)
 	if err != nil {
-		return nil, fmt.Errorf("SetCommitBuildStatus: %w", err)
+		return nil, fmt.Errorf("resource/out: set build status %w", err)
 	}
 
 	return &models.OutResponse{Version: version}, nil
