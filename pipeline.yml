@@ -1,26 +1,81 @@
 resource_types:
-- name: bitbucket-pr
-  type: registry-image
-  source:
-    repository: n7mobile/ci-bitbucket-pr
+  - name: bitbucket-pr
+    type: registry-image
+    source:
+      repository: n7mobile/ci-bitbucket-pr
 
 resources:
-- name: bitbucket-pr
-  type: bitbucket-pr
-  check_every: 5m
-  source:
-    workspace: n7mobile
-    slug: pr-test-repo
-    username: 
-    password: 
-    debug: true
+  - name: pull-request
+    type: bitbucket-pr
+    check_every: 1m
+    source:
+      workspace: n7mobile
+      slug: pr-test-repo
+      username: ((ci_user))
+      password: ((ci_pass))
+      debug: true
 
 jobs:
-- name: do-it
-  plan:
-  - get: bitbucket-pr
-    trigger: true
-  - put: bitbucket-pr
-    params:
-      version_path: bitbucket-pr/version
-      status: test
+  - name: foo
+    plan:
+      - get: pull-request
+        trigger: true
+        version: every
+        params:
+          version_filename: .concourse.version.json
+      - put: pull-request
+        params:
+          version_path: pull-request/.concourse.version.json
+          action: set:commit.build.status
+          status: INPROGRESS
+          url: example.com
+          name: PR resource test
+          description: Some userful description
+      - task: do-it
+        config:
+          inputs:
+            - name: pull-request
+          outputs:
+            - name: pull-request
+          platform: linux
+          image_resource:
+            source:
+              repository: alpine
+            type: docker-image
+          run:
+            path: echo
+            args:
+              - "I'm really doing it!"
+  - name: bar
+    plan:
+      - get: pull-request
+        trigger: true
+        passed:
+          - foo
+        params:
+          version_filename: .concourse.version.json
+      - task: and-it
+        config:
+          inputs:
+            - name: pull-request
+          outputs:
+            - name: pull-request
+          platform: linux
+          image_resource:
+            source:
+              repository: alpine
+            type: docker-image
+          run:
+            path: sh
+            args:
+              - -exc
+              - |
+                  find . | sed -e "s/[^-][^\/]*\// |/g" -e "s/|\([^ ]\)/|-\1/"
+      - put: pull-request
+        params:
+          version_path: pull-request/.concourse.version.json
+          action: set:commit.build.status
+          status: SUCCESSFUL
+          url: example.com
+          name: PR resource test
+          description: Some userful description
