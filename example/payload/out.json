@@ -1,0 +1,16 @@
+{
+    "source": {
+        "workspace": "n7mobile",
+        "slug": "pr-test-repo",        
+        "username": "$BITBUCKET_USERNAME",
+        "password": "$BITBUCKET_PASSWORD",
+        "debug": true
+    },
+    "params": {
+        "version_path": ".concourse.version.json",
+        "status": "INPROGRESS",
+        "url": "example.com",
+        "name": "PR resource test",
+        "description": "Some userful description" 
+    }
+}

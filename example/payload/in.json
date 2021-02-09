@@ -1,0 +1,19 @@
+{
+    "source": {
+        "workspace": "n7mobile",
+        "slug": "pr-test-repo",        
+        "username": "$BITBUCKET_USERNAME",
+        "password": "$BITBUCKET_PASSWORD",
+        "logs": true
+    },
+    "version": {
+        "commit": "03ab4b91e769",
+        "id": "8",
+        "title": "pr8 created online with Bitbucket",
+        "branch": "Hubert-Andrzejewski/pr8-created-online-with-bitbucket-1612535259129",
+        "updated": "2021-02-05T14:27:41.775574+00:00"
+    },
+    "params": {
+        "version_filename": ".concourse.version.json"
+    }
+}
