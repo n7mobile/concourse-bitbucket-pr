@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 )
 
@@ -24,8 +23,14 @@ const (
 	StoppedCommitBuildStatus     CommitBuildStatus = "STOPPED"
 )
 
+type CommitBuildKey string
+
+const (
+	BuildCommitBuildKey CommitBuildKey = "build"
+)
+
 type CommitBuildStatusRequest struct {
-	Key         string            `json:"key"`
+	Key         CommitBuildKey    `json:"key"`
 	State       CommitBuildStatus `json:"state"`
 	Name        string            `json:"name"`
 	Description string            `json:"description"`
@@ -88,7 +93,7 @@ func (c Client) SetCommitBuildStatus(commitHash string, statReq *CommitBuildStat
 
 	req, err := http.NewRequest("POST", url, data)
 	if err != nil {
-		return err
+		return fmt.Errorf("bitbucket/client: http req creation: %w", err)
 	}
 
 	req.SetBasicAuth(c.auth.Username, c.auth.Password)
@@ -97,12 +102,18 @@ func (c Client) SetCommitBuildStatus(commitHash string, statReq *CommitBuildStat
 
 	res, err := c.httpClient.Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("bitbucket/client: http req to %s: %w", url, err)
 	}
 
-	if res.StatusCode != 200 {
-		resData, _ := ioutil.ReadAll(res.Body)
-		return fmt.Errorf("setting commit build status failed with status %s and response \n%s", res.Status, resData)
+	buf := new(bytes.Buffer)
+
+	_, err = io.Copy(buf, res.Body)
+	if err != nil {
+		return fmt.Errorf("bitbucket/client: read body: %w", err)
+	}
+
+	if res.StatusCode != 201 && res.StatusCode != 200 {
+		return fmt.Errorf("bitbucket/client: %s: %s, %s", res.Status, url, buf.Bytes())
 	}
 
 	return nil
