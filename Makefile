@@ -1,7 +1,7 @@
 ifdef VERSION
-docker_registry = n7mobile/ci-bitbucket-pr:$(VERSION)
+docker_registry = n7mobile/concourse-bitbucket-pr:$(VERSION)
 else
-docker_registry = n7mobile/ci-bitbucket-pr
+docker_registry = n7mobile/concourse-bitbucket-pr
 endif
 
 docker:

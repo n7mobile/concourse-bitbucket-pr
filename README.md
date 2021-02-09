@@ -1,92 +1,122 @@
-# bitbucket-pr
+# concourse-bitbucket-pr
 
-Write a description of the resource here.
+Resource for ConcourseCI pipelines. Provides simple management of PullRequests:
+
+* Get list of opened PullRequests on BitBucket Cloud
+* Checkout repository at commit referenced by PullRequest
+* Set status for processed PullRequest on BitBucket Cloud
+
+## Why?
+
+There is a plenty of the ready-to-use projects doing same thing and even more ([just search](https://github.com/search?q=concourse+bitbucket+pullrequest)). 
+
+Unfortunately, using some of them, we hit a limitation of the number of API calls to BitBucket service (1000 requests per hour). As this limit is not so low, just watching for new PRs and set status for them should not exceed this value. But it was.
+
+Instead of making a fix and PR to one of the existing project, we decided to create resource - absolutely simple, managable and tailored to our case, which does not break the whole CI for our 20+ projects.
 
 ## Source Configuration
 
-* `a`: *Required.* This is a required setting.
+* `workspace`: *Required.* Name of BitBucket organization/team.
 
-* `b`: *Optional.* This is an optional setting.
+* `slug`: *Required.* Name of BitBucket repository.
 
-* `c`: *Optional. Default `true`* This is an optional setting with a default value.
+* `username`: *Required.* Username of BitBucket account with access to repository. Provided account is used for git clone (HTTPS) and BitBukcet REST API.
+
+* `password`: *Required.* User password or user app password (in case of 2FA).
+
+* `debug`: *Optional.* Default *`false`*. Prints additional logs during processing.
 
 ### Example
 
+Example files are placed in the `examples` directory, unexpectedly.
+
 ```yaml
 resource_types:
-- name: bitbucket-pr
-  type: registry-image
-  source:
-    repository: n7mobile/ci-bitbucket-pr
+  - name: bitbucket-pr
+    type: registry-image
+    source:
+      repository: n7mobile/concourse-bitbucket-pr
 
 resources:
-- name: bitbucket-pr
-  type: bitbucket-pr
-  check_every: 5m
-  source:
-    log_level: debug
+  - name: pull-request
+    type: bitbucket-pr
+    check_every: 1m
+    source:
+      workspace: n7mobile
+      slug: pr-test-repo
+      username: ((ci_user))
+      password: ((ci_pass))
+      debug: true
 
 jobs:
-- name: do-it
-  plan:
-  - get: bitbucket-pr
-    trigger: true
-  - put: bitbucket-pr
-    params:
-      version_path: bitbucket-pr/version
+  - name: foo
+    plan:
+      - get: pull-request
+        trigger: true
+        version: every
+        params:
+          version_filename: .concourse.version.json
+      - put: pull-request
+        params:
+          version_path: pull-request/.concourse.version.json
+          action: set:commit.build.status
+          status: INPROGRESS
+          url: example.com
+          name: PR resource test
+          description: Some userful description
 ```
 
 ## Behavior
 
-### `check`: Check for something
+### `check`: List of open PullRequests
 
-Write a description of what is checked here.
+List of the all open PullRequests for a given repository is fetched by BitBucket API v2. Paging is handled.
 
-### `in`: Fetch something
+Version object is generated as:
+```json
+{
+    "commit": /* Prefix of SHA1 commit */,
+    "id":     /* Identifier of PullRequest */,
+    "title":  /* Title of PullRequest */,
+    "branch": /* Source branch of PullRequest */
+}
+```
 
-Write a description of what is fetched here.
+### `in`: Checkout by commit hash
+
+Generally, `git clone && git checkout 757c47d4` performed in [libgit2](https://libgit2.org)
 
 #### Parameters
 
-* `a`: *Required.* This is a required parameter.
+* `version_filename`: *Optional.* Filename (without directory) to store Version object between `in` and `out` step. Required only when used in conjunction with `put` step.
 
-* `b`: *Optional.* This is an optional parameter.
+### `out`: Set build status
 
-### `out`: Put something somewhere
-
-Write a description of what is being put somewhere.
+Set a build status on the commit. Particular commit is identified by the hash in pull request.
 
 #### Parameters
 
-* `a`: *Required.* This is a required parameter.
+* `version_path`: *Required.* Path to Version object created in `in` stage (`get` step). Should be created by join *get* step name with value of `version_filename` param, ie. `pull-request/.concourse.version.json`
 
-* `b`: *Optional. Default `true`* This is an optional parameter with a default value.
+* `action`: *Required. Identifier of the action to perform on PR. Currently, only `set:commit.build.status` is supported.
+
+* `status`: *Required. Commit build status to set. Possible values: `STOPPED`, `INPROGRESS`, `FAILED`, `SUCCESSFUL`
+
+* `url`: *Required. URL to build status and results, ie. *https://ci.example.com/builds/$BUILD_ID*
+
+* `name`: *Optional.* Name of the build status entity.
+
+* `description`: *Optional.* Description of the build status entity.
 
 ## Development
 
 ### Prerequisites
 
-* golang is *required* - version 1.11.x or higher is required.
+* golang is *required* - version 1.15.x or higher is required.
 * docker is *required* - version 17.05.x or higher is required.
 * make is *required* - version 4.1 of GNU make is tested.
+* libgit2 is *required* - version 1.1.0 is tested.
 
-### Running the tests
+### Operating
 
-The Makefile includes a `test` target, and tests are also run inside the Docker build.
-
-Run the tests with the following command:
-
-```sh
-make test
-```
-
-### Building and publishing the image
-
-The Makefile includes targets for building and publishing the docker image. Each of these
-takes an optional `VERSION` argument, which will tag and/or push the docker image with
-the given version.
-
-```sh
-make VERSION=1.2.3
-make publish VERSION=1.2.3
-```
+All task are defined in the self explanatory Makefile.
