@@ -5,11 +5,9 @@ RUN apk update && \
 
 WORKDIR /code
 
-COPY go.* /code/
-RUN go mod download
-
 COPY . /code
-RUN go build -o ./bin ./...
+RUN mkdir -p ./bin && \
+    go build -o ./bin ./...
 
 FROM alpine
 
