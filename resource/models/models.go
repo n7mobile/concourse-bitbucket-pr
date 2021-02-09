@@ -153,8 +153,22 @@ func (p Params) Validate() error {
 // Metadata object for presenting additional info in Concourse
 type Metadata []MetadataField
 
+// MetadataName enumerates possible keys of Metadata dictionary
+type MetadataName string
+
+const (
+	// AuthorMetadataName indicates author of PR-ed commit
+	AuthorMetadataName MetadataName = "author"
+
+	// HashMetadataName inidicates full SHA1 of PR-ed head commit
+	HashMetadataName MetadataName = "hash"
+
+	// MessageMetadataName inidicates message of PR-ed head commit
+	MessageMetadataName MetadataName = "message"
+)
+
 // MetadataField as single entity of additional info in Concourse
 type MetadataField struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
+	Name  MetadataName `json:"name"`
+	Value string       `json:"value"`
 }
