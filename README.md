@@ -75,10 +75,10 @@ List of the all open PullRequests for a given repository is fetched by BitBucket
 Version object is generated as:
 ```json
 {
-    "commit": /* Prefix of SHA1 commit */,
-    "id":     /* Identifier of PullRequest */,
-    "title":  /* Title of PullRequest */,
-    "branch": /* Source branch of PullRequest */
+    "commit": "", /* Prefix of SHA1 commit */
+    "id":     "", /* Identifier of PullRequest */
+    "title":  "", /* Title of PullRequest */
+    "branch": "", /* Source branch of PullRequest */
 }
 ```
 

@@ -8,7 +8,7 @@ import (
 	Version object schema
 */
 
-// Version object used to uniquely identify an instance of the resource by ConcourseCI
+// Version object used to uniquely identify an instance of the resource by Concourse
 type Version struct {
 	Commit string `json:"commit"`
 	ID     string `json:"id"`
