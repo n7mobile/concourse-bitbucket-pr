@@ -13,11 +13,9 @@ publish: docker
 test:
 	go test -v ./...
 
-fmt:
-	find . -name '*.go' | while read -r f; do \
-		gofmt -w -s "$$f"; \
-	done
+run:
+	./run.sh $(stage)
 
 .DEFAULT_GOAL := docker
 
-.PHONY: go-mod docker-build docker-push docker test fmt
+.PHONY: go-mod docker-build docker-push docker test
