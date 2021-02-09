@@ -1,4 +1,4 @@
-module github.com/n7mobile/ci-bitbucket-pr
+module github.com/n7mobile/concourse-bitbucket-pr
 
 go 1.15
 

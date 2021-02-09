@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/n7mobile/ci-bitbucket-pr/concourse"
-	"github.com/n7mobile/ci-bitbucket-pr/resource"
-	"github.com/n7mobile/ci-bitbucket-pr/resource/models"
+	"github.com/n7mobile/concourse-bitbucket-pr/concourse"
+	"github.com/n7mobile/concourse-bitbucket-pr/resource"
+	"github.com/n7mobile/concourse-bitbucket-pr/resource/models"
 )
 
 func main() {

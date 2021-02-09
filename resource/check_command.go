@@ -5,9 +5,9 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/n7mobile/ci-bitbucket-pr/bitbucket"
-	"github.com/n7mobile/ci-bitbucket-pr/concourse"
-	"github.com/n7mobile/ci-bitbucket-pr/resource/models"
+	"github.com/n7mobile/concourse-bitbucket-pr/bitbucket"
+	"github.com/n7mobile/concourse-bitbucket-pr/concourse"
+	"github.com/n7mobile/concourse-bitbucket-pr/resource/models"
 )
 
 // CheckCommand fetches list of PullRequests form BitBucket API and traslates it list versions sorted by PR Identifier

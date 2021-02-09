@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 
 	git "github.com/libgit2/git2go/v31"
-	"github.com/n7mobile/ci-bitbucket-pr/bitbucket"
-	"github.com/n7mobile/ci-bitbucket-pr/concourse"
-	"github.com/n7mobile/ci-bitbucket-pr/resource/models"
+	"github.com/n7mobile/concourse-bitbucket-pr/bitbucket"
+	"github.com/n7mobile/concourse-bitbucket-pr/concourse"
+	"github.com/n7mobile/concourse-bitbucket-pr/resource/models"
 )
 
 // OutCommand sets PullRequest status and metadata to passed one in OutRequest struct
