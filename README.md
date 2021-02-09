@@ -73,7 +73,7 @@ jobs:
 List of the all open PullRequests for a given repository is fetched by BitBucket API v2. Paging is handled.
 
 Version object is generated as:
-```json
+```javascript
 {
     "commit": "", /* Prefix of SHA1 commit */
     "id":     "", /* Identifier of PullRequest */
