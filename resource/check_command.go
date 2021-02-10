@@ -33,10 +33,6 @@ func (cmd *CheckCommand) Run(req models.CheckRequest) ([]models.Version, error) 
 		return nil, fmt.Errorf("resource/check: paged prs: %w", err)
 	}
 
-	sort.Slice(preqs, func(i int, j int) bool {
-		return preqs[i].UpdatedOn < preqs[j].UpdatedOn
-	})
-
 	versions := []models.Version{}
 
 	if len(req.Version.Commit) > 0 {
