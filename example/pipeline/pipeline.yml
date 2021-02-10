@@ -9,8 +9,8 @@ resources:
     type: bitbucket-pr
     check_every: 1m
     source:
-      workspace: n7mobile
-      slug: pr-test-repo
+      workspace: example_company
+      slug: repository_name
       username: ((ci_user))
       password: ((ci_pass))
       debug: true
@@ -21,16 +21,6 @@ jobs:
       - get: pull-request
         trigger: true
         version: every
-        params:
-          version_filename: .concourse.version.json
-      - put: pull-request
-        params:
-          version_path: pull-request/.concourse.version.json
-          action: set:commit.build.status
-          status: INPROGRESS
-          url: example.com
-          name: PR resource test
-          description: Some userful description
       - task: do-it
         config:
           inputs:
@@ -52,8 +42,14 @@ jobs:
         trigger: true
         passed:
           - foo
+      - put: pull-request
         params:
-          version_filename: .concourse.version.json
+          repo_path: pull-request
+          action: set:commit.build.status
+          status: INPROGRESS
+          url: example.com
+          name: PR resource test
+          description: Some userful description
       - task: and-it
         config:
           inputs:
@@ -71,11 +67,25 @@ jobs:
               - -exc
               - |
                   find . | sed -e "s/[^-][^\/]*\// |/g" -e "s/|\([^ ]\)/|-\1/"
-      - put: pull-request
-        params:
-          version_path: pull-request/.concourse.version.json
-          action: set:commit.build.status
-          status: SUCCESSFUL
-          url: example.com
-          name: PR resource test
-          description: Some userful description
+        on_failure:
+          do:
+          - put: pull-request
+            params:
+              repo_path: pull-request
+              action: set:commit.build.status
+              status: FAILED
+              url: https://ci.example.com/builds/$BUILD_ID
+              name: "Concourse CI Assemble / Test"
+              description: "Buil failed https://ci.example.com/builds/$BUILD_ID"
+        on_success:
+          do:
+          - put: pull-request
+            params:
+              repo_path: pull-request
+              action: set:commit.build.status
+              status: SUCCESSFUL
+              url: https://ci.example.com/builds/$BUILD_ID
+              name: "Concourse CI Assemble / Test"
+              description: "Buil passed https://ci.example.com/builds/$BUILD_ID"
+
+

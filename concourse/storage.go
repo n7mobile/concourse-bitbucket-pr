@@ -20,6 +20,14 @@ func NewStorage(dir, name string) *Storage {
 	}
 }
 
+// StorageFilename enumerates constant names used in system
+type StorageFilename string
+
+const (
+	// VersionStorageFilename points concourse Version object
+	VersionStorageFilename StorageFilename = ".concourse.version.json"
+)
+
 // Write obj marshaled into JSON in file with given name in given directory
 func (s Storage) Write(obj interface{}) error {
 	bytes, err := json.Marshal(obj)

@@ -52,15 +52,11 @@ func (cmd *InCommand) Run(destination string, req models.InRequest) (*models.InR
 
 	cmd.Logger.Debugf("resource/in: Checkout succeeded")
 
-	if len(req.Params.VersionFilename) > 0 {
-		cmd.Logger.Debugf("resource/in: Version write as file...")
+	cmd.Logger.Debugf("resource/in: version write to %s", concourse.VersionStorageFilename)
 
-		err = concourse.NewStorage(destination, req.Params.VersionFilename).Write(&req.Version)
-		if err != nil {
-			return nil, fmt.Errorf("resource/in: version write: %w", err)
-		}
-
-		cmd.Logger.Debugf("resource/in: Version write succeeded")
+	err = concourse.NewStorage(destination, string(concourse.VersionStorageFilename)).Write(&req.Version)
+	if err != nil {
+		return nil, fmt.Errorf("resource/in: version write: %w", err)
 	}
 
 	return &models.InResponse{

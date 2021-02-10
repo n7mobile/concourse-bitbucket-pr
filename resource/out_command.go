@@ -28,19 +28,20 @@ func (cmd *OutCommand) Run(req models.OutRequest, destination string) (*models.O
 		return nil, fmt.Errorf("resource/out: params invalid: %w", err)
 	}
 
-	cmd.Logger.Debugf("resource/out: reading version from file %s", req.Params.VersionPath)
+	versionPath := filepath.Join(req.Params.RepoPath, string(concourse.VersionStorageFilename))
+
+	cmd.Logger.Debugf("resource/out: reading version from %s", versionPath)
 
 	var version models.Version
 
-	err = concourse.NewStorage(destination, req.Params.VersionPath).Read(&version)
+	err = concourse.NewStorage(destination, versionPath).Read(&version)
 	if err != nil {
 		return nil, fmt.Errorf("resource/out: version read: %w", err)
 	}
 
 	cmd.Logger.Debugf("resource/out: version with commit %s", version.Commit)
 
-	dir, _ := filepath.Split(req.Params.VersionPath)
-	path := filepath.Join(destination, dir)
+	path := filepath.Join(destination, req.Params.RepoPath)
 
 	hash, err := cmd.gitGetHeadHash(path)
 	if err != nil {

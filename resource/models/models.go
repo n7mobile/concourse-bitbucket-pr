@@ -111,22 +111,17 @@ const (
 
 // Params object containing configuration of single resource invocation
 type Params struct {
-	VersionFilename string          `json:"version_filename"`
-	VersionPath     string          `json:"version_path"`
-	Action          ParamsOutAction `json:"action"`
-	Status          string          `json:"status"`
-	Name            string          `json:"name"`
-	Description     string          `json:"description"`
-	URL             string          `json:"url"`
+	RepoPath    string          `json:"repo_path"`
+	Action      ParamsOutAction `json:"action"`
+	Status      string          `json:"status"`
+	Name        string          `json:"name"`
+	Description string          `json:"description"`
+	URL         string          `json:"url"`
 }
 
 // Validate Params object against required fields
 func (p Params) Validate() error {
-	if len(p.VersionFilename) == 0 && len(p.VersionPath) == 0 {
-		return errors.New("resource/model: version path or name is empty")
-	}
-
-	if len(p.Action) == 0 && len(p.VersionPath) != 0 {
+	if len(p.Action) == 0 && len(p.RepoPath) != 0 {
 		return errors.New("resource/model: action is empty or invalid")
 	}
 
@@ -134,7 +129,7 @@ func (p Params) Validate() error {
 		return errors.New("resource/model: status is empty")
 	}
 
-	if len(p.VersionPath) == 0 {
+	if len(p.RepoPath) == 0 {
 		return errors.New("resource/model: repo path is empty")
 	}
 
