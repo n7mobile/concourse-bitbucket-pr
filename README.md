@@ -98,11 +98,11 @@ Set a build status on the commit. Particular commit is identified by the hash in
 
 * `version_path`: *Required.* Path to Version object created in `in` stage (`get` step). Should be created by join *get* step name with value of `version_filename` param, ie. `pull-request/.concourse.version.json`
 
-* `action`: *Required. Identifier of the action to perform on PR. Currently, only `set:commit.build.status` is supported.
+* `action`: *Required.* Identifier of the action to perform on PR. Currently, only `set:commit.build.status` is supported.
 
-* `status`: *Required. Commit build status to set. Possible values: `STOPPED`, `INPROGRESS`, `FAILED`, `SUCCESSFUL`
+* `status`: *Required.* Commit build status to set. Possible values: `STOPPED`, `INPROGRESS`, `FAILED`, `SUCCESSFUL`
 
-* `url`: *Required. URL to build status and results, ie. *https://ci.example.com/builds/$BUILD_ID*
+* `url`: *Required.* URL to build status and results, ie. *https://ci.example.com/builds/$BUILD_ID*
 
 * `name`: *Optional.* Name of the build status entity.
 
