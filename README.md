@@ -54,11 +54,9 @@ jobs:
       - get: pull-request
         trigger: true
         version: every
-        params:
-          version_filename: .concourse.version.json
       - put: pull-request
         params:
-          version_path: pull-request/.concourse.version.json
+          version_path: pull-request
           action: set:commit.build.status
           status: INPROGRESS
           url: example.com
@@ -84,11 +82,9 @@ Version object is generated as:
 
 ### `in`: Checkout by commit hash
 
-Generally, `git clone && git checkout 757c47d4` performed in [libgit2](https://libgit2.org)
+Generally, `git clone && git checkout 757c47d4` performed in [libgit2](https://libgit2.org).
 
-#### Parameters
-
-* `version_filename`: *Optional.* Filename (without directory) to store Version object between `in` and `out` step. Required only when used in conjunction with `put` step.
+Version object passed by Concourse is stored as `.concourse.version.json` and avaialable to use by following steps.
 
 ### `out`: Set build status
 
@@ -96,7 +92,7 @@ Set a build status on the commit. Particular commit is identified by the hash in
 
 #### Parameters
 
-* `version_path`: *Required.* Path to Version object created in `in` stage (`get` step). Should be created by join *get* step name with value of `version_filename` param, ie. `pull-request/.concourse.version.json`
+* `repo_path`: *Required.* Name of the previous *`get`: concourse-bitbucket-pr* step where checked-out repo may be found.
 
 * `action`: *Required.* Identifier of the action to perform on PR. Currently, only `set:commit.build.status` is supported.
 

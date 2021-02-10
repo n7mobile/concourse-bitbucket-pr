@@ -2,7 +2,7 @@ resource_types:
   - name: bitbucket-pr
     type: registry-image
     source:
-      repository: n7mobile/concourse-bitbucket-pr
+      repository: n7docker/concourse-bitbucket-pr
 
 resources:
   - name: pull-request
