@@ -52,5 +52,11 @@ func (cmd *CheckCommand) Run(req models.CheckRequest) ([]models.Version, error) 
 		})
 	}
 
+	sort.Slice(versions, func(i int, j int) bool {
+		numI, _ := strconv.Atoi(versions[i].ID)
+		numJ, _ := strconv.Atoi(versions[j].ID)
+		return numI < numJ
+	})
+
 	return versions, nil
 }
