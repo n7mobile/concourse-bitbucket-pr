@@ -68,6 +68,7 @@ func (c Client) GetPullRequestsPaged() ([]PullRequestEntity, error) {
 	values := make([]PullRequestEntity, 0)
 
 	url := c.APIURL(pullRequestsEndpoint)
+	url = fmt.Sprintf("%s?pagelen=%d", url, 50)
 
 	for ok := true; ok; ok = len(url) > 0 {
 		resp, err := c.getPullRequestsSinglePage(url)
