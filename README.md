@@ -6,6 +6,8 @@ Resource for ConcourseCI pipelines. Provides simple management of PullRequests:
 * Checkout repository at commit referenced by PullRequest
 * Set status for processed PullRequest on BitBucket Cloud
 
+Docker image is hosted on dockerhub [n7docker/concourse-bitbucket-pr](https://hub.docker.com/r/n7docker/concourse-bitbucket-pr).
+
 ## Why?
 
 There is a plenty of the ready-to-use projects doing same thing and even more ([just search](https://github.com/search?q=concourse+bitbucket+pullrequest)). 
@@ -13,6 +15,10 @@ There is a plenty of the ready-to-use projects doing same thing and even more ([
 Unfortunately, using some of them, we hit a limitation of the number of API calls to BitBucket service (1000 requests per hour). As this limit is not so low, just watching for new PRs and set status for them should not exceed this value. But it was. The problem was calling */commits* endpoint in order to fetch full SHA1 of updated commit instead of getting just current HEAD of cloned repository.
 
 Instead of making a fix and PR to one of the existing project, we decided to create resource - absolutely simple, managable and tailored to our case, which does not break the whole CI for our 20+ projects.
+
+## Who?
+
+Resource is actively maintained by [N7Mobile sp. z o.o.](https://n7mobile.com). We love OpenSource as it's free in many meanings.
 
 ## Source Configuration
 
