@@ -14,7 +14,7 @@ There is a plenty of the ready-to-use projects doing same thing and even more ([
 
 Unfortunately, using some of them, we hit a limitation of the number of API calls to BitBucket service (1000 requests per hour). As this limit is not so low, just watching for new PRs and set status for them should not exceed this value. But it was. The problem was calling */commits* endpoint in order to fetch full SHA1 of updated commit instead of getting just current HEAD of cloned repository.
 
-Instead of making a fix and PR to one of the existing project, we decided to create resource - absolutely simple, managable and tailored to our case, which does not break the whole CI for our 20+ projects.
+Instead of making a fix and PR to one of the existing project, we decided to create resource - absolutely simple, manageable and tailored to our case, which does not break the whole CI for our 20+ projects.
 
 ## Who?
 
@@ -26,7 +26,7 @@ Resource is actively maintained by [N7Mobile sp. z o.o.](https://n7mobile.com). 
 
 * `slug`: *Required.* Name of BitBucket repository.
 
-* `username`: *Required.* Username of BitBucket account with access to repository. Provided account is used for git clone (HTTPS) and BitBukcet REST API.
+* `username`: *Required.* Username of BitBucket account with access to repository. Provided account is used for git clone (HTTPS) and BitBucket REST API.
 
 * `password`: *Required.* User password or user app password (in case of 2FA).
 
@@ -90,7 +90,7 @@ Version object is generated as:
 
 Generally, `git clone && git checkout 757c47d4` performed in [libgit2](https://libgit2.org).
 
-Version object passed by Concourse is stored as `.concourse.version.json` and avaialable to use by following steps.
+Version object passed by Concourse is stored as `.concourse.version.json` and available to use by following steps.
 
 ### `out`: Set build status
 
