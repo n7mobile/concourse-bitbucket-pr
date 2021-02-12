@@ -62,7 +62,7 @@ jobs:
         version: every
       - put: pull-request
         params:
-          version_path: pull-request
+          repo_path: pull-request
           action: set:commit.build.status
           status: INPROGRESS
           url: example.com
