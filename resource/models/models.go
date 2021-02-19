@@ -11,23 +11,12 @@ import (
 // Version object used to uniquely identify an instance of the resource by Concourse
 type Version struct {
 	Commit string `json:"commit"`
-	ID     string `json:"id"`
-	Title  string `json:"title"`
-	Branch string `json:"branch"`
 }
 
 // Validate Version object against required fields
 func (s Version) Validate() error {
 	if len(s.Commit) == 0 {
 		return errors.New("resource/model: commit ref is empty")
-	}
-
-	if len(s.ID) == 0 {
-		return errors.New("resource/model: PR ID is empty")
-	}
-
-	if len(s.Branch) == 0 {
-		return errors.New("resource/model: branch is empty")
 	}
 
 	return nil
@@ -82,6 +71,7 @@ type Source struct {
 	Username  string `json:"username"`
 	Password  string `json:"password"`
 	Debug     bool   `json:"debug"`
+	Short     bool   `json:"short"`
 }
 
 // Validate Source object against required fields
