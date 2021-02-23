@@ -18,8 +18,6 @@ func main() {
 
 	destination := os.Args[1]
 
-	fmt.Fprintln(os.Stderr, "calling out cmd wioth dest ", destination)
-
 	var request models.OutRequest
 
 	err := json.NewDecoder(os.Stdin).Decode(&request)

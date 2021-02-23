@@ -1,16 +1,16 @@
 {
     "source": {
         "workspace": "n7mobile",
-        "slug": "pr-test-repo",        
+        "slug": "pr-test-repo",
         "username": "$BITBUCKET_USERNAME",
         "password": "$BITBUCKET_PASSWORD",
         "debug": true
     },
     "params": {
-        "version_path": ".concourse.version.json",
+        "repo_path": ".",
+        "action": "set:commit.build.status",
         "status": "INPROGRESS",
-        "url": "example.com",
-        "name": "PR resource test",
-        "description": "Some userful description" 
+        "name": "Concourse CI Assemble / Test",
+        "url": "https://ci.n7mobile.com/builds/$BUILD_ID"
     }
 }

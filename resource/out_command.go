@@ -28,19 +28,6 @@ func (cmd *OutCommand) Run(req models.OutRequest, destination string) (*models.O
 		return nil, fmt.Errorf("resource/out: params invalid: %w", err)
 	}
 
-	versionPath := filepath.Join(req.Params.RepoPath, string(concourse.VersionStorageFilename))
-
-	cmd.Logger.Debugf("resource/out: reading version from %s", versionPath)
-
-	var version models.Version
-
-	err = concourse.NewStorage(destination, versionPath).Read(&version)
-	if err != nil {
-		return nil, fmt.Errorf("resource/out: version read: %w", err)
-	}
-
-	cmd.Logger.Debugf("resource/out: version with commit %s", version.Commit)
-
 	path := filepath.Join(destination, req.Params.RepoPath)
 
 	hash, err := cmd.gitGetHeadHash(path)
@@ -67,12 +54,16 @@ func (cmd *OutCommand) Run(req models.OutRequest, destination string) (*models.O
 
 	cmd.Logger.Debugf("resource/out: set status %s", statReq.State)
 
-	err = client.SetCommitBuildStatus(version.Commit, &statReq)
+	err = client.SetCommitBuildStatus(hash, &statReq)
 	if err != nil {
 		return nil, fmt.Errorf("resource/out: set build status %w", err)
 	}
 
-	return &models.OutResponse{Version: version}, nil
+	return &models.OutResponse{
+		Version: models.Version{
+			Ref: hash,
+		},
+	}, nil
 }
 
 func (cmd *OutCommand) gitGetHeadHash(path string) (string, error) {

@@ -45,19 +45,12 @@ func (cmd *InCommand) Run(destination string, req models.InRequest) (*models.InR
 
 	url := bitbucket.NewClient(req.Source.Workspace, req.Source.Slug, &auth).RepoURL()
 
-	commit, err := cmd.gitCheckoutRef(req.Source.Username, req.Source.Password, url, req.Version.Branch, req.Version.Commit, destination)
+	commit, err := cmd.gitCheckoutRef(req.Source.Username, req.Source.Password, url, req.Version.Ref, destination)
 	if err != nil {
 		return nil, fmt.Errorf("resource/in: gitCheckoutRef: %w", err)
 	}
 
 	cmd.Logger.Debugf("resource/in: Checkout succeeded")
-
-	cmd.Logger.Debugf("resource/in: version write to %s", concourse.VersionStorageFilename)
-
-	err = concourse.NewStorage(destination, string(concourse.VersionStorageFilename)).Write(&req.Version)
-	if err != nil {
-		return nil, fmt.Errorf("resource/in: version write: %w", err)
-	}
 
 	return &models.InResponse{
 		Version: req.Version,
@@ -69,13 +62,13 @@ func (cmd *InCommand) Run(destination string, req models.InRequest) (*models.InR
 	}, nil
 }
 
-func (cmd *InCommand) gitCheckoutRef(user, pass string, url, branch, ref string, destination string) (*git.Commit, error) {
+func (cmd *InCommand) gitCheckoutRef(user, pass string, url, ref string, destination string) (*git.Commit, error) {
 	creds, err := git.NewCredentialUserpassPlaintext(user, pass)
 	if err != nil {
 		return nil, fmt.Errorf("resource/in: git creds: %w", err)
 	}
 
-	cmd.Logger.Debugf("resource/in: \tClone branch '%s' from repo %s", branch, url)
+	cmd.Logger.Debugf("resource/in: \tClone from repo %s", url)
 
 	opts := git.CloneOptions{
 		FetchOptions: &git.FetchOptions{
@@ -88,7 +81,6 @@ func (cmd *InCommand) gitCheckoutRef(user, pass string, url, branch, ref string,
 				},
 			},
 		},
-		CheckoutBranch: branch,
 	}
 
 	repo, err := git.Clone(url, destination, &opts)
