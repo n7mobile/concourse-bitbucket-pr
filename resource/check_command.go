@@ -2,6 +2,7 @@ package resource
 
 import (
 	"fmt"
+	"os"
 	"sort"
 
 	git "github.com/libgit2/git2go/v31"
@@ -33,8 +34,10 @@ func (cmd *CheckCommand) Run(req models.CheckRequest) ([]models.Version, error) 
 		return nil, fmt.Errorf("resource/check: paged prs: %w", err)
 	}
 
+	destination := "/tmp/" + req.Source.Slug
+
 	url := bitbucket.NewClient(req.Source.Workspace, req.Source.Slug, &auth).RepoURL()
-	repo, err := cmd.gitBareClone(req.Source.Username, req.Source.Password, url)
+	repo, err := cmd.gitBareClone(req.Source.Username, req.Source.Password, url, destination)
 	if err != nil {
 		return nil, fmt.Errorf("resource/check: repo clone: %w", err)
 	}
@@ -66,16 +69,21 @@ func (cmd *CheckCommand) Run(req models.CheckRequest) ([]models.Version, error) 
 		})
 	}
 
+	err = os.RemoveAll(destination)
+	if err != nil {
+		return nil, fmt.Errorf("resource/check: remove tmp dir: %s", destination)
+	}
+
 	return versions, nil
 }
 
-func (cmd CheckCommand) gitBareClone(user, pass string, url string) (*git.Repository, error) {
+func (cmd CheckCommand) gitBareClone(user, pass string, url string, destination string) (*git.Repository, error) {
 	creds, err := git.NewCredentialUserpassPlaintext(user, pass)
 	if err != nil {
-		return nil, fmt.Errorf("resource/in: git creds: %w", err)
+		return nil, fmt.Errorf("resource/check: git creds: %w", err)
 	}
 
-	cmd.Logger.Debugf("resource/in: \tClone history from repo %s", url)
+	cmd.Logger.Debugf("resource/check: \tClone history from repo %s", url)
 
 	opts := git.CloneOptions{
 		FetchOptions: &git.FetchOptions{
@@ -91,7 +99,7 @@ func (cmd CheckCommand) gitBareClone(user, pass string, url string) (*git.Reposi
 		Bare: true,
 	}
 
-	repo, err := git.Clone(url, "/tmp/check", &opts)
+	repo, err := git.Clone(url, destination, &opts)
 	if err != nil {
 		return nil, fmt.Errorf("resource/in: cloning: %w", err)
 	}
