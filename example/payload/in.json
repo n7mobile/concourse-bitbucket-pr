@@ -4,9 +4,9 @@
         "slug": "pr-test-repo",        
         "username": "$BITBUCKET_USERNAME",
         "password": "$BITBUCKET_PASSWORD",
-        "logs": true
+        "debug": true
     },
     "version": {
-        "ref": "e9b566bd767611b562907b51264602030c37c7b1"
+        "ref": "935409f7a711a4cadd560ebeb861c6bf67b1b056"
     }
 } 

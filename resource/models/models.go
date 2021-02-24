@@ -143,11 +143,14 @@ const (
 	// AuthorMetadataName indicates author of PR-ed commit
 	AuthorMetadataName MetadataName = "author"
 
-	// HashMetadataName inidicates full SHA1 of PR-ed head commit
-	HashMetadataName MetadataName = "hash"
+	// BranchMetadataName inidicates name of branch which contains current commit
+	BranchMetadataName MetadataName = "branch"
 
 	// MessageMetadataName inidicates message of PR-ed head commit
 	MessageMetadataName MetadataName = "message"
+
+	// TimestampMetadataName contains timestamp of processed commit
+	TimestampMetadataName MetadataName = "timestamp"
 )
 
 // MetadataField as single entity of additional info in Concourse

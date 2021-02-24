@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	git "github.com/libgit2/git2go/v31"
 	"github.com/n7mobile/concourse-bitbucket-pr/bitbucket"
@@ -45,7 +46,7 @@ func (cmd *InCommand) Run(destination string, req models.InRequest) (*models.InR
 
 	url := bitbucket.NewClient(req.Source.Workspace, req.Source.Slug, &auth).RepoURL()
 
-	commit, err := cmd.gitCheckoutRef(req.Source.Username, req.Source.Password, url, req.Version.Ref, destination)
+	commit, branch, err := cmd.gitCheckoutRef(req.Source.Username, req.Source.Password, url, req.Version.Ref, destination)
 	if err != nil {
 		return nil, fmt.Errorf("resource/in: gitCheckoutRef: %w", err)
 	}
@@ -56,19 +57,20 @@ func (cmd *InCommand) Run(destination string, req models.InRequest) (*models.InR
 		Version: req.Version,
 		Metadata: models.Metadata{
 			{Name: models.AuthorMetadataName, Value: commit.Author().Name},
-			{Name: models.HashMetadataName, Value: commit.Id().String()},
+			{Name: models.TimestampMetadataName, Value: commit.Author().When.String()},
 			{Name: models.MessageMetadataName, Value: commit.Message()},
+			{Name: models.BranchMetadataName, Value: branch},
 		},
 	}, nil
 }
 
-func (cmd *InCommand) gitCheckoutRef(user, pass string, url, ref string, destination string) (*git.Commit, error) {
+func (cmd *InCommand) gitCheckoutRef(user, pass string, url, ref string, destination string) (*git.Commit, string, error) {
 	creds, err := git.NewCredentialUserpassPlaintext(user, pass)
 	if err != nil {
-		return nil, fmt.Errorf("resource/in: git creds: %w", err)
+		return nil, "", fmt.Errorf("resource/in: git creds: %w", err)
 	}
 
-	cmd.Logger.Debugf("resource/in: \tClone from repo %s", url)
+	cmd.Logger.Debugf("resource/in: Clone from repo %s", url)
 
 	opts := git.CloneOptions{
 		FetchOptions: &git.FetchOptions{
@@ -85,36 +87,63 @@ func (cmd *InCommand) gitCheckoutRef(user, pass string, url, ref string, destina
 
 	repo, err := git.Clone(url, destination, &opts)
 	if err != nil {
-		return nil, fmt.Errorf("resource/in: cloning: %w", err)
+		return nil, "", fmt.Errorf("resource/in: cloning: %w", err)
 	}
 
-	cmd.Logger.Debugf("resource/in: \tReverse parsing of a shorthand ref '%s'", ref)
+	cmd.Logger.Debugf("resource/in: Reverse parsing of a shorthand ref '%s'", ref)
 
 	refObj, err := repo.RevparseSingle(ref)
 	if err != nil {
-		return nil, fmt.Errorf("resource/in: RevparseSingle: %w", err)
+		return nil, "", fmt.Errorf("resource/in: RevparseSingle: %w", err)
 	}
 
-	cmd.Logger.Debugf("resource/in: \tLooking up for a commit with id '%s'", refObj.Id().String())
+	cmd.Logger.Debugf("resource/in: Looking up for a commit with id '%s'", refObj.Id().String())
 
 	commit, err := repo.LookupCommit(refObj.Id())
 	if err != nil {
-		return nil, fmt.Errorf("resource/in: LookupCommit: %w", err)
+		return nil, "", fmt.Errorf("resource/in: LookupCommit: %w", err)
 	}
 
-	cmd.Logger.Debugf("resource/in: \tHard reset of the repo to commit '%s'", commit.Summary())
-
-	err = repo.ResetToCommit(commit, git.ResetHard, &git.CheckoutOptions{})
+	iterator, err := repo.NewBranchIterator(git.BranchRemote)
 	if err != nil {
-		return nil, fmt.Errorf("resource/in: ResetToCommit: %w", err)
+		return nil, "", fmt.Errorf("resource/in: iterator for remote branches: %w", err)
 	}
 
-	cmd.Logger.Debugf("resource/in: \tSetting head detached")
+	var branch *git.Branch
 
-	err = repo.SetHeadDetached(refObj.Id())
+	iterator.ForEach(func(b *git.Branch, bt git.BranchType) error {
+		if t := b.Target(); t != nil && refObj.Id().Equal(t) {
+			branch = b
+		}
+		return nil
+	})
+
+	if branch == nil {
+		return nil, "", fmt.Errorf("resource/in: branch with commit not found")
+	}
+
+	refName, err := branch.Name()
 	if err != nil {
-		return nil, fmt.Errorf("resource/in: SetHeadDetached: %w", err)
+		return nil, "", fmt.Errorf("resource/in: branch ref name: %w", err)
 	}
 
-	return commit, nil
+	cmd.Logger.Debugf("resource/in: Checkout repo at ref '%s'", refName)
+
+	err = repo.SetHead("refs/remotes/" + refName)
+	if err != nil {
+		return nil, "", fmt.Errorf("resource/in: SetHead: %w", err)
+	}
+
+	err = repo.CheckoutHead(&git.CheckoutOptions{Strategy: git.CheckoutForce})
+	if err != nil {
+		return nil, "", fmt.Errorf("resource/in: CheckoutHead: %w", err)
+	}
+
+	branchName := refName
+
+	if remotes, err := repo.Remotes.List(); err == nil && len(remotes) > 0 {
+		branchName = strings.TrimPrefix(branchName, remotes[0]+"/")
+	}
+
+	return commit, branchName, nil
 }
