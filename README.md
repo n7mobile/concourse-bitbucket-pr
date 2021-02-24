@@ -76,21 +76,20 @@ jobs:
 
 List of the all open PullRequests for a given repository is fetched by BitBucket API v2. Paging is handled.
 
+In order to retrieve full SHA1 of the last PR commit, bare checkout of a git is performed. It's minimalizes usage of the BitBucket API.
+
 Version object is generated as:
 ```javascript
 {
-    "commit": "", /* Prefix of SHA1 commit */
-    "id":     "", /* Identifier of PullRequest */
-    "title":  "", /* Title of PullRequest */
-    "branch": "", /* Source branch of PullRequest */
+    "ref": "", /* Full SHA1 of the commit */
 }
 ```
 
 ### `in`: Checkout by commit hash
 
-Generally, `git clone && git checkout 757c47d4` performed in [libgit2](https://libgit2.org).
+Generally, `git clone && git checkout 757c47d4` performed by [libgit2](https://libgit2.org).
 
-Version object passed by Concourse is stored as `.concourse.version.json` and available to use by following steps.
+Version object passed by Concourse is stored as `.concourse.version.json` and available to use by `out` step.
 
 ### `out`: Set build status
 
