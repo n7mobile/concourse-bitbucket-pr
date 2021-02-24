@@ -2,7 +2,9 @@ package resource
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
+	"strings"
 
 	git "github.com/libgit2/git2go/v31"
 	"github.com/n7mobile/concourse-bitbucket-pr/bitbucket"
@@ -46,9 +48,9 @@ func (cmd *OutCommand) Run(req models.OutRequest, destination string) (*models.O
 
 	statReq := bitbucket.CommitBuildStatusRequest{
 		Key:         bitbucket.BuildCommitBuildKey,
-		Name:        req.Params.Name,
-		Description: req.Params.Description,
-		URL:         req.Params.URL,
+		Name:        substituteEnvs(req.Params.Name),
+		Description: substituteEnvs(req.Params.Description),
+		URL:         substituteEnvs(req.Params.URL),
 		State:       bitbucket.CommitBuildStatus(req.Params.Status),
 	}
 
@@ -78,4 +80,13 @@ func (cmd *OutCommand) gitGetHeadHash(path string) (string, error) {
 	}
 
 	return head.Target().String(), nil
+}
+
+func substituteEnvs(s string) string {
+	for _, item := range os.Environ() {
+		kv := strings.Split(item, "=")
+		s = strings.ReplaceAll(s, "$"+kv[0], kv[1])
+	}
+
+	return s
 }
