@@ -82,6 +82,7 @@ Version object is generated as:
 ```javascript
 {
     "ref": "", /* Full SHA1 of the commit */
+    "id": ""   /* Identifier of Pullrequest */
 }
 ```
 

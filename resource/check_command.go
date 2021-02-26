@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strconv"
 
 	git "github.com/libgit2/git2go/v31"
 	"github.com/n7mobile/concourse-bitbucket-pr/bitbucket"
@@ -44,8 +45,11 @@ func (cmd *CheckCommand) Run(req models.CheckRequest) ([]models.Version, error) 
 
 	commits := []*git.Commit{}
 	versions := []models.Version{}
+	lut := map[string]string{}
 
-	if commit, err := cmd.getCommit(repo, req.Version.Ref); err == nil {
+	if req.Version.Validate() != nil {
+		cmd.Logger.Errorf("resource/check: passed Version invalid; skipping")
+	} else if commit, err := cmd.getCommit(repo, req.Version.Ref); err == nil {
 		commits = append(commits, commit)
 	} else if len(req.Version.Ref) > 0 {
 		versions = append(versions, req.Version)
@@ -54,6 +58,7 @@ func (cmd *CheckCommand) Run(req models.CheckRequest) ([]models.Version, error) 
 	for _, preq := range preqs {
 		if commit, err := cmd.getCommit(repo, preq.Source.Commit.Hash); err == nil {
 			commits = append(commits, commit)
+			lut[commit.AsObject().Id().String()] = strconv.Itoa(preq.ID)
 		}
 	}
 
@@ -64,8 +69,10 @@ func (cmd *CheckCommand) Run(req models.CheckRequest) ([]models.Version, error) 
 	})
 
 	for _, comm := range commits {
+		ref := comm.AsObject().Id().String()
 		versions = append(versions, models.Version{
-			Ref: comm.AsObject().Id().String(),
+			Ref: ref,
+			ID:  lut[ref],
 		})
 	}
 

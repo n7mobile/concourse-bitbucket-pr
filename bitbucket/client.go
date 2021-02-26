@@ -58,3 +58,7 @@ func (c Client) APIURL(endpoint endpoint, components ...string) string {
 func (c Client) RepoURL() string {
 	return repoBaseURL + c.repoPath + ".git"
 }
+
+func (c Client) PullrequestURL(id string) string {
+	return fmt.Sprintf("%s%s/pull-requests/%s", repoBaseURL, c.repoPath, id)
+}

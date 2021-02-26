@@ -44,7 +44,8 @@ func (cmd *InCommand) Run(destination string, req models.InRequest) (*models.InR
 		Password: req.Source.Password,
 	}
 
-	url := bitbucket.NewClient(req.Source.Workspace, req.Source.Slug, &auth).RepoURL()
+	client := bitbucket.NewClient(req.Source.Workspace, req.Source.Slug, &auth)
+	url := client.RepoURL()
 
 	commit, branch, err := cmd.gitCheckoutRef(req.Source.Username, req.Source.Password, url, req.Version.Ref, destination)
 	if err != nil {
@@ -60,6 +61,8 @@ func (cmd *InCommand) Run(destination string, req models.InRequest) (*models.InR
 			{Name: models.TimestampMetadataName, Value: commit.Author().When.String()},
 			{Name: models.MessageMetadataName, Value: commit.Message()},
 			{Name: models.BranchMetadataName, Value: branch},
+			{Name: models.CommitMetadataName, Value: commit.AsObject().Id().String()},
+			{Name: models.PullrequestURLMetadataName, Value: client.PullrequestURL(req.Version.ID)},
 		},
 	}, nil
 }

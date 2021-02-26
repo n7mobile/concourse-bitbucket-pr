@@ -11,12 +11,17 @@ import (
 // Version object used to uniquely identify an instance of the resource by Concourse
 type Version struct {
 	Ref string `json:"ref"`
+	ID  string `json:"id"`
 }
 
 // Validate Version object against required fields
 func (s Version) Validate() error {
 	if len(s.Ref) == 0 {
 		return errors.New("resource/model: ref is empty")
+	}
+
+	if len(s.ID) == 0 {
+		return errors.New("resource/model: id is empty")
 	}
 
 	return nil
@@ -151,6 +156,12 @@ const (
 
 	// TimestampMetadataName contains timestamp of processed commit
 	TimestampMetadataName MetadataName = "timestamp"
+
+	// CommitMetadataName contains full hash of PR last commit
+	CommitMetadataName MetadataName = "commit"
+
+	// PullrequestURLMetadataName contains URL to Bitbucket service for a given PR
+	PullrequestURLMetadataName MetadataName = "pullrequest"
 )
 
 // MetadataField as single entity of additional info in Concourse
