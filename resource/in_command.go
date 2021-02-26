@@ -54,6 +54,13 @@ func (cmd *InCommand) Run(destination string, req models.InRequest) (*models.InR
 
 	cmd.Logger.Debugf("resource/in: Checkout succeeded")
 
+	cmd.Logger.Debugf("resource/in: version write to %s", concourse.VersionStorageFilename)
+
+	err = concourse.NewStorage(destination, string(concourse.VersionStorageFilename)).Write(&req.Version)
+	if err != nil {
+		return nil, fmt.Errorf("resource/in: version write: %w", err)
+	}
+
 	return &models.InResponse{
 		Version: req.Version,
 		Metadata: models.Metadata{
