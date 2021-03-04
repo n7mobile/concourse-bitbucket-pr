@@ -7,10 +7,7 @@
         "debug": true
     },
     "version": {
-        "commit": "03ab4b91e729",
-        "id": "8",
-        "title": "pr8 created online with Bitbucket",
-        "branch": "Hubert-Andrzejewski/pr8-created-online-with-bitbucket-1612535259129",
-        "updated": "2021-02-05T14:27:41.775574+00:00"
+        "ref": "03ab41b91e769060c08c865a331fff86e97dd9f79",
+        "id": "8"
     }
 }

@@ -5,6 +5,7 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"strings"
 
 	git "github.com/libgit2/git2go/v31"
 	"github.com/n7mobile/concourse-bitbucket-pr/bitbucket"
@@ -15,6 +16,21 @@ import (
 // CheckCommand fetches list of PullRequests form BitBucket API and traslates it list versions sorted by PR Identifier
 type CheckCommand struct {
 	Logger *concourse.Logger
+}
+
+type commitAttr struct {
+	commit      *git.Commit
+	pullRequest bitbucket.PullRequestEntity
+}
+
+type sortByCommitDate []commitAttr
+
+func (a sortByCommitDate) Len() int      { return len(a) }
+func (a sortByCommitDate) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a sortByCommitDate) Less(i, j int) bool {
+	timeI := a[i].commit.Committer().When
+	timeJ := a[j].commit.Committer().When
+	return timeI.Before(timeJ)
 }
 
 // Run CheckCommand processing.
@@ -43,40 +59,44 @@ func (cmd *CheckCommand) Run(req models.CheckRequest) ([]models.Version, error) 
 		return nil, fmt.Errorf("resource/check: repo clone: %w", err)
 	}
 
-	commits := []*git.Commit{}
-	versions := []models.Version{}
-	lut := map[string]string{}
+	commits := []commitAttr{}
 
-	if req.Version.Validate() != nil {
-		cmd.Logger.Errorf("resource/check: passed Version invalid; skipping")
-	} else if commit, err := cmd.getCommit(repo, req.Version.Ref); err == nil {
-		commits = append(commits, commit)
-	} else if len(req.Version.Ref) > 0 {
-		versions = append(versions, req.Version)
-	}
-
-	for _, preq := range preqs {
-		if commit, err := cmd.getCommit(repo, preq.Source.Commit.Hash); err == nil {
-			commits = append(commits, commit)
-			lut[commit.AsObject().Id().String()] = strconv.Itoa(preq.ID)
+	for _, pr := range preqs {
+		if commit, err := cmd.getCommit(repo, pr.Source.Commit.Hash); err == nil {
+			commits = append(commits, commitAttr{
+				commit:      commit,
+				pullRequest: pr,
+			})
+		} else {
+			cmd.Logger.Errorf("resource/check: commit %s not found: %w", pr.Source.Commit.Hash, err)
 		}
 	}
 
-	sort.Slice(commits, func(i int, j int) bool {
-		timeI := commits[i].Committer().When
-		timeJ := commits[j].Committer().When
-		return timeI.Before(timeJ)
-	})
+	sort.Sort(sortByCommitDate(commits))
 
-	for _, comm := range commits {
-		ref := comm.AsObject().Id().String()
+	versions := []models.Version{}
+	hasVersion := false
+
+	for _, c := range commits {
+		ref := c.commit.AsObject().Id().String()
+		id := strconv.Itoa(c.pullRequest.ID)
+
 		versions = append(versions, models.Version{
 			Ref: ref,
-			ID:  lut[ref],
+			ID:  id,
 		})
+
+		hasVersion = hasVersion || strings.HasPrefix(ref, req.Version.Ref)
+		cmd.Logger.Debugf("resource/check: append version (%s, %s)", id, ref)
+	}
+
+	if !hasVersion && req.Version.Validate() == nil {
+		versions = append([]models.Version{req.Version}, versions...)
+		cmd.Logger.Debugf("resource/check: passed version (%s, %s) valid but not present in git. Prepending", req.Version.ID, req.Version.Ref)
 	}
 
 	err = os.RemoveAll(destination)
+
 	if err != nil {
 		return nil, fmt.Errorf("resource/check: remove tmp dir: %s", destination)
 	}
@@ -90,7 +110,7 @@ func (cmd CheckCommand) gitBareClone(user, pass string, url string, destination 
 		return nil, fmt.Errorf("resource/check: git creds: %w", err)
 	}
 
-	cmd.Logger.Debugf("resource/check: \tClone history from repo %s", url)
+	cmd.Logger.Debugf("resource/check: clone history from repo %s", url)
 
 	opts := git.CloneOptions{
 		FetchOptions: &git.FetchOptions{
@@ -115,14 +135,10 @@ func (cmd CheckCommand) gitBareClone(user, pass string, url string, destination 
 }
 
 func (cmd CheckCommand) getCommit(repo *git.Repository, ref string) (*git.Commit, error) {
-	cmd.Logger.Debugf("resource/in: \tReverse parsing of a shorthand ref '%s'", ref)
-
 	refObj, err := repo.RevparseSingle(ref)
 	if err != nil {
 		return nil, fmt.Errorf("resource/in: RevparseSingle: %w", err)
 	}
-
-	cmd.Logger.Debugf("resource/in: \tLooking up for a commit with id '%s'", refObj.Id().String())
 
 	commit, err := repo.LookupCommit(refObj.Id())
 	if err != nil {
