@@ -1,6 +1,7 @@
 package resource
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -47,12 +48,17 @@ func (cmd *InCommand) Run(destination string, req models.InRequest) (*models.InR
 	client := bitbucket.NewClient(req.Source.Workspace, req.Source.Slug, &auth)
 	url := client.RepoURL()
 
-	commit, branch, err := cmd.gitCheckoutRef(req.Source.Username, req.Source.Password, url, req.Version.Ref, destination)
+	commit, err := cmd.gitCheckoutRef(req.Source.Username, req.Source.Password, url, req.Version.Ref, destination)
 	if err != nil {
 		return nil, fmt.Errorf("resource/in: gitCheckoutRef: %w", err)
 	}
 
 	cmd.Logger.Debugf("resource/in: Checkout succeeded")
+
+	branch, err := cmd.gitBranchOfCommit(commit)
+	if err != nil {
+		cmd.Logger.Errorf("resource/in: gitBranchOfCommit: %w", err)
+	}
 
 	cmd.Logger.Debugf("resource/in: version write to %s", concourse.VersionStorageFilename)
 
@@ -61,23 +67,31 @@ func (cmd *InCommand) Run(destination string, req models.InRequest) (*models.InR
 		return nil, fmt.Errorf("resource/in: version write: %w", err)
 	}
 
-	return &models.InResponse{
+	response := models.InResponse{
 		Version: req.Version,
 		Metadata: models.Metadata{
 			{Name: models.AuthorMetadataName, Value: commit.Author().Name},
 			{Name: models.TimestampMetadataName, Value: commit.Author().When.String()},
 			{Name: models.MessageMetadataName, Value: commit.Message()},
-			{Name: models.BranchMetadataName, Value: branch},
 			{Name: models.CommitMetadataName, Value: commit.AsObject().Id().String()},
 			{Name: models.PullrequestURLMetadataName, Value: client.PullrequestURL(req.Version.ID)},
 		},
-	}, nil
+	}
+
+	if branch != nil {
+		response.Metadata = append(response.Metadata, models.MetadataField{
+			Name:  models.BranchMetadataName,
+			Value: *branch,
+		})
+	}
+
+	return &response, nil
 }
 
-func (cmd *InCommand) gitCheckoutRef(user, pass string, url, ref string, destination string) (*git.Commit, string, error) {
+func (cmd *InCommand) gitCheckoutRef(user, pass string, url, ref string, destination string) (*git.Commit, error) {
 	creds, err := git.NewCredentialUserpassPlaintext(user, pass)
 	if err != nil {
-		return nil, "", fmt.Errorf("resource/in: git creds: %w", err)
+		return nil, fmt.Errorf("resource/in: git creds: %w", err)
 	}
 
 	cmd.Logger.Debugf("resource/in: Clone from repo %s", url)
@@ -97,57 +111,92 @@ func (cmd *InCommand) gitCheckoutRef(user, pass string, url, ref string, destina
 
 	repo, err := git.Clone(url, destination, &opts)
 	if err != nil {
-		return nil, "", fmt.Errorf("resource/in: cloning: %w", err)
+		return nil, fmt.Errorf("resource/in: cloning: %w", err)
 	}
 
 	cmd.Logger.Debugf("resource/in: Reverse parsing of a shorthand ref '%s'", ref)
 
 	refObj, err := repo.RevparseSingle(ref)
 	if err != nil {
-		return nil, "", fmt.Errorf("resource/in: RevparseSingle: %w", err)
+		return nil, fmt.Errorf("resource/in: RevparseSingle: %w", err)
 	}
 
 	cmd.Logger.Debugf("resource/in: Looking up for a commit with id '%s'", refObj.Id().String())
 
 	commit, err := repo.LookupCommit(refObj.Id())
 	if err != nil {
-		return nil, "", fmt.Errorf("resource/in: LookupCommit: %w", err)
+		return nil, fmt.Errorf("resource/in: LookupCommit: %w", err)
 	}
 
-	iterator, err := repo.NewBranchIterator(git.BranchRemote)
+	err = repo.SetHeadDetached(commit.Id())
 	if err != nil {
-		return nil, "", fmt.Errorf("resource/in: iterator for remote branches: %w", err)
-	}
-
-	var branch *git.Branch
-
-	iterator.ForEach(func(b *git.Branch, bt git.BranchType) error {
-		if t := b.Target(); t != nil && refObj.Id().Equal(t) {
-			branch = b
-		}
-		return nil
-	})
-
-	if branch == nil {
-		return nil, "", fmt.Errorf("resource/in: branch with commit not found")
-	}
-
-	refName, err := branch.Name()
-	if err != nil {
-		return nil, "", fmt.Errorf("resource/in: branch ref name: %w", err)
-	}
-
-	cmd.Logger.Debugf("resource/in: Checkout repo at ref '%s'", refName)
-
-	err = repo.SetHead("refs/remotes/" + refName)
-	if err != nil {
-		return nil, "", fmt.Errorf("resource/in: SetHead: %w", err)
+		return nil, fmt.Errorf("resource/in: SetHeadDetached: %w", err)
 	}
 
 	err = repo.CheckoutHead(&git.CheckoutOptions{Strategy: git.CheckoutForce})
 	if err != nil {
-		return nil, "", fmt.Errorf("resource/in: CheckoutHead: %w", err)
+		return nil, fmt.Errorf("resource/in: CheckoutHead: %w", err)
 	}
+
+	return commit, nil
+}
+
+// gitBranchOfCommit iterates over commits of every remote branch and compares its refs
+// First ref matches yields name of the branch
+func (cmd InCommand) gitBranchOfCommit(commit *git.Commit) (*string, error) {
+	repo := commit.Owner()
+	if repo == nil {
+		return nil, errors.New("resource/in: owner of commit is empty")
+	}
+
+	iterator, err := repo.NewBranchIterator(git.BranchRemote)
+	if err != nil {
+		return nil, fmt.Errorf("resource/in: iterator for remote branches: %w", err)
+	}
+
+	var branch *git.Branch
+
+	err = iterator.ForEach(func(b *git.Branch, bt git.BranchType) error {
+		head := b.Target()
+		if head == nil {
+			return nil
+		}
+
+		walk, err := repo.Walk()
+		if err != nil {
+			return fmt.Errorf("resource/in: branch walk: %w", err)
+		}
+
+		err = walk.Push(head)
+		if err != nil {
+			return fmt.Errorf("resource/in: walk push %s: %w", head.String(), err)
+		}
+
+		found := false
+
+		walk.Sorting(git.SortTopological)
+		walk.Iterate(func(c *git.Commit) bool {
+			found = c.Id().Equal(commit.Id())
+			return !found
+		})
+
+		if found {
+			branch = b
+		}
+
+		return nil
+	})
+
+	if branch == nil {
+		return nil, fmt.Errorf("resource/in: branch with commit not found")
+	}
+
+	refName, err := branch.Name()
+	if err != nil {
+		return nil, fmt.Errorf("resource/in: branch ref name: %w", err)
+	}
+
+	cmd.Logger.Debugf("resource/in: Checkout repo at ref '%s'", refName)
 
 	branchName := refName
 
@@ -155,5 +204,5 @@ func (cmd *InCommand) gitCheckoutRef(user, pass string, url, ref string, destina
 		branchName = strings.TrimPrefix(branchName, remotes[0]+"/")
 	}
 
-	return commit, branchName, nil
+	return &branchName, nil
 }
