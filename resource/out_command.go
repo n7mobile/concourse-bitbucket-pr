@@ -60,11 +60,15 @@ func (cmd *OutCommand) Run(req models.OutRequest, destination string) (*models.O
 	client := bitbucket.NewClient(req.Source.Workspace, req.Source.Slug, &auth)
 
 	statReq := bitbucket.CommitBuildStatusRequest{
-		Key:         bitbucket.BuildCommitBuildKey,
+		Key:         substituteEnvs(req.Params.Key),
 		Name:        substituteEnvs(req.Params.Name),
 		Description: substituteEnvs(req.Params.Description),
 		URL:         substituteEnvs(req.Params.URL),
 		State:       bitbucket.CommitBuildStatus(req.Params.Status),
+	}
+
+	if len(statReq.Key) == 0 {
+		statReq.Key = "BUILD"
 	}
 
 	cmd.Logger.Debugf("resource/out: set status %s", statReq.State)

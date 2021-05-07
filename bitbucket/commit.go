@@ -23,14 +23,8 @@ const (
 	StoppedCommitBuildStatus     CommitBuildStatus = "STOPPED"
 )
 
-type CommitBuildKey string
-
-const (
-	BuildCommitBuildKey CommitBuildKey = "build"
-)
-
 type CommitBuildStatusRequest struct {
-	Key         CommitBuildKey    `json:"key"`
+	Key         string            `json:"key"`
 	State       CommitBuildStatus `json:"state"`
 	Name        string            `json:"name"`
 	Description string            `json:"description"`

@@ -107,6 +107,7 @@ const (
 type Params struct {
 	RepoPath    string          `json:"repo_path"`
 	Action      ParamsOutAction `json:"action"`
+	Key         string          `json:"key"`
 	Status      string          `json:"status"`
 	Name        string          `json:"name"`
 	Description string          `json:"description"`

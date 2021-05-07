@@ -102,6 +102,8 @@ Set a build status on the commit. Particular commit is identified by the hash in
 
 * `action`: *Required.* Identifier of the action to perform on PR. Currently, only `set:commit.build.status` is supported.
 
+* `key`: *Optional.* Key of the commit build status. Passing multiple build statuses identified by a single key will overwrite each other. In case of the multiple builds from single commit (i.e. flutter -> iOS + Android), identifier of the current build `iOS-$BUILD_NAME` and `Android-$BUILD_NAME` should be passed.
+
 * `status`: *Required.* Commit build status to set. Possible values: `STOPPED`, `INPROGRESS`, `FAILED`, `SUCCESSFUL`
 
 * `url`: *Required.* URL to build status and results, ie. *https://ci.example.com/builds/$BUILD_ID*

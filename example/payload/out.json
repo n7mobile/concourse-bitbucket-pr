@@ -9,8 +9,9 @@
     "params": {
         "repo_path": ".",
         "action": "set:commit.build.status",
+        "key": "$BUILD_ID",
         "status": "INPROGRESS",
-        "name": "Concourse CI Assemble / Test",
+        "name": "Custom ID$BUILD_ID",
         "url": "https://ci.n7mobile.com/builds/$BUILD_ID"
     }
 }

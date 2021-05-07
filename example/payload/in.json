@@ -1,13 +1,13 @@
 {
     "source": {
         "workspace": "n7mobile",
-        "slug": "pr-test-repo",        
+        "slug": "pr-test-repo",
         "username": "$BITBUCKET_USERNAME",
         "password": "$BITBUCKET_PASSWORD",
         "debug": true
     },
     "version": {
-        "ref": "c1d8e89e3e0a58b45348fa78a84ce63a6fe8a5d9",
+        "ref": "e9b566bd767611b562907b51264602030c37c7b1",
         "id": "9"
     }
-} 
+}
