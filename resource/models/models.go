@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"errors"
 )
 
@@ -112,6 +113,25 @@ type Params struct {
 	Name        string          `json:"name"`
 	Description string          `json:"description"`
 	URL         string          `json:"url"`
+}
+
+func (p *Params) UnmarshalJSON(data []byte) error {
+	type paramsDefaults Params
+	defaults := &paramsDefaults{
+		Action:      CommitBuildStatusSetParamsOutAction,
+		Key:         "BUILD",
+		Name:        "$BUILD_JOB_NAME #$BUILD_ID",
+		Description: "Concourse Build CI",
+	}
+
+	err := json.Unmarshal(data, defaults)
+	if err != nil {
+		return err
+	}
+
+	*p = Params(*defaults)
+
+	return nil
 }
 
 // Validate Params object against required fields

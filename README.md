@@ -100,17 +100,17 @@ Set a build status on the commit. Particular commit is identified by the hash in
 
 * `repo_path`: *Required.* Name of the previous *`get`: concourse-bitbucket-pr* step where checked-out repo may be found.
 
-* `action`: *Required.* Identifier of the action to perform on PR. Currently, only `set:commit.build.status` is supported.
+* `action`: *Optional.* Default *`set:commit.build.status`*. Identifier of the action to perform on PR. Currently, only `set:commit.build.status` is supported.
 
-* `key`: *Optional.* Key of the commit build status. Passing multiple build statuses identified by a single key will overwrite each other. In case of the multiple builds from single commit (i.e. flutter -> iOS + Android), identifier of the current build `iOS-$BUILD_NAME` and `Android-$BUILD_NAME` should be passed.
+* `key`: *Optional.* Default *`BUILD`*. Key of the commit build status. Passing multiple build statuses identified by a single key will overwrite each other. In case of the multiple builds from single commit (i.e. flutter -> iOS + Android), identifier of the current build `iOS-$BUILD_NAME` and `Android-$BUILD_NAME` should be passed.
 
 * `status`: *Required.* Commit build status to set. Possible values: `STOPPED`, `INPROGRESS`, `FAILED`, `SUCCESSFUL`
 
 * `url`: *Required.* URL to build status and results, ie. *https://ci.example.com/builds/$BUILD_ID*
 
-* `name`: *Optional.* Name of the build status entity.
+* `name`: *Optional.* Default *`$BUILD_JOB_NAME #$BUILD_ID`*. Name of the build status entity.
 
-* `description`: *Optional.* Description of the build status entity.
+* `description`: *Optional.* Default *`Concourse Build CI`*. Description of the build status entity.
 
 ## Development
 
