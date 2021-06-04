@@ -4,10 +4,11 @@
         "slug": "pr-test-repo",
         "username": "$BITBUCKET_USERNAME",
         "password": "$BITBUCKET_PASSWORD",
-        "debug": true
+        "debug": true,
+        "recurse_submodules": true
     },
     "version": {
-        "ref": "e9b566bd767611b562907b51264602030c37c7b1",
-        "id": "9"
+        "ref": "2b553c832b055dfb610addcfcc11fbd4e8e3f5ae",
+        "id": "13"
     }
 }

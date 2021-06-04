@@ -60,6 +60,12 @@ func (cmd *InCommand) Run(destination string, req models.InRequest) (*models.InR
 
 	cmd.Logger.Debugf("resource/in: Checkout succeeded")
 
+	if req.Source.RecurseSubmodules {
+		cmd.Logger.Debugf("resource/in: submodules update")
+
+		cmd.gitUpdateSubmodules(req.Source.Username, req.Source.Password, commit.Owner())
+	}
+
 	branch, err := cmd.gitBranchOfCommit(commit)
 	if err != nil {
 		cmd.Logger.Errorf("resource/in: gitBranchOfCommit: %w", err)
@@ -144,6 +150,33 @@ func (cmd *InCommand) gitCheckoutRef(user, pass string, url, ref string, destina
 	}
 
 	return commit, nil
+}
+
+func (cmd InCommand) gitUpdateSubmodules(user, pass string, repo *git.Repository) {
+	opts := &git.SubmoduleUpdateOptions{
+		FetchOptions: &git.FetchOptions{
+			RemoteCallbacks: git.RemoteCallbacks{
+				CredentialsCallback: func(url, username_from_url string, allowed_types git.CredentialType) (*git.Credential, error) {
+					return git.NewCredentialUserpassPlaintext(user, pass)
+				},
+				CertificateCheckCallback: func(cert *git.Certificate, valid bool, hostname string) git.ErrorCode {
+					return git.ErrorCodeOK
+				},
+			},
+		},
+	}
+
+	repo.Submodules.Foreach(func(sub *git.Submodule, name string) int {
+		err := sub.Update(true, opts)
+
+		if err != nil {
+			cmd.Logger.Errorf("resource/in: submodule %s update: %w", name, err)
+		} else {
+			cmd.Logger.Debugf("resource/in: submodule %s updated", name)
+		}
+
+		return 0
+	})
 }
 
 // gitBranchOfCommit iterates over commits of every remote branch and compares its refs

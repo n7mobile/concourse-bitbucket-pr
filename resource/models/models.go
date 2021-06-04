@@ -72,11 +72,12 @@ type CheckResponse []Version
 
 // Source object with configuration of whole resource instance
 type Source struct {
-	Workspace string `json:"workspace"`
-	Slug      string `json:"slug"`
-	Username  string `json:"username"`
-	Password  string `json:"password"`
-	Debug     bool   `json:"debug"`
+	Workspace         string `json:"workspace"`
+	Slug              string `json:"slug"`
+	Username          string `json:"username"`
+	Password          string `json:"password"`
+	Debug             bool   `json:"debug"`
+	RecurseSubmodules bool   `json:"recurse_submodules"`
 }
 
 // Validate Source object against required fields
