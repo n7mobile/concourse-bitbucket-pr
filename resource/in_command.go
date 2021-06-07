@@ -38,11 +38,6 @@ func (cmd *InCommand) Run(destination string, req models.InRequest) (*models.InR
 		return nil, fmt.Errorf("resource/in: creating destination: %w", err)
 	}
 
-	err = os.RemoveAll(destination)
-	if err != nil {
-		return nil, fmt.Errorf("resource/in: cleaning destination: %w", err)
-	}
-
 	cmd.Logger.Debugf("resource/in: repo checkout...")
 
 	auth := bitbucket.Auth{
