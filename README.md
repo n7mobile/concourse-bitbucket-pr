@@ -32,6 +32,8 @@ Resource is actively maintained by [N7Mobile sp. z o.o.](https://n7mobile.com). 
 
 * `debug`: *Optional.* Default *`false`*. Prints additional logs during processing.
 
+* `recurse_submodules`: *Optional.* Default *`false`*. Checkouts all submodules, if repo has any. Credentails are taken from the configuration of parent repo.
+
 ### Example
 
 Example files are placed in the `examples` directory, unexpectedly.
