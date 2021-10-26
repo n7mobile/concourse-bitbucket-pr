@@ -162,12 +162,14 @@ func (cmd InCommand) gitUpdateSubmodules(user, pass string, repo *git.Repository
 	}
 
 	repo.Submodules.Foreach(func(sub *git.Submodule, name string) int {
+		cmd.Logger.Debugf("resource/in: Submodule %s update to commit %s", name, sub.HeadId().String())
+
 		err := sub.Update(true, opts)
 
 		if err != nil {
-			cmd.Logger.Errorf("resource/in: submodule %s update: %w", name, err)
+			cmd.Logger.Errorf("resource/in: Submodule %s update: %w", name, err)
 		} else {
-			cmd.Logger.Debugf("resource/in: submodule %s updated", name)
+			cmd.Logger.Debugf("resource/in: Submodule %s updated", name)
 		}
 
 		return 0
