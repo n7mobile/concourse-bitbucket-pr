@@ -100,7 +100,7 @@ func (cmd *InCommand) gitCheckoutRef(user, pass string, url, ref string, destina
 		return nil, fmt.Errorf("resource/in: git creds: %w", err)
 	}
 
-	cmd.Logger.Debugf("resource/in: Clone from repo %s", url)
+	cmd.Logger.Debugf("resource/in: Clone from repo '%s'", url)
 
 	opts := git.CloneOptions{
 		FetchOptions: &git.FetchOptions{
@@ -117,31 +117,12 @@ func (cmd *InCommand) gitCheckoutRef(user, pass string, url, ref string, destina
 
 	repo, err := git.Clone(url, destination, &opts)
 	if err != nil {
-		return nil, fmt.Errorf("resource/in: cloning: %w", err)
+		return nil, fmt.Errorf("resource/in: Cloning: %w", err)
 	}
 
-	cmd.Logger.Debugf("resource/in: Reverse parsing of a shorthand ref '%s'", ref)
-
-	refObj, err := repo.RevparseSingle(ref)
+	commit, err := cmd.gitCheckoutDetachedHead(repo, ref)
 	if err != nil {
-		return nil, fmt.Errorf("resource/in: RevparseSingle: %w", err)
-	}
-
-	cmd.Logger.Debugf("resource/in: Looking up for a commit with id '%s'", refObj.Id().String())
-
-	commit, err := repo.LookupCommit(refObj.Id())
-	if err != nil {
-		return nil, fmt.Errorf("resource/in: LookupCommit: %w", err)
-	}
-
-	err = repo.SetHeadDetached(commit.Id())
-	if err != nil {
-		return nil, fmt.Errorf("resource/in: SetHeadDetached: %w", err)
-	}
-
-	err = repo.CheckoutHead(&git.CheckoutOptions{Strategy: git.CheckoutForce})
-	if err != nil {
-		return nil, fmt.Errorf("resource/in: CheckoutHead: %w", err)
+		return nil, fmt.Errorf("resource/in: Detach head at %s: %w", ref, err)
 	}
 
 	return commit, nil
@@ -162,18 +143,64 @@ func (cmd InCommand) gitUpdateSubmodules(user, pass string, repo *git.Repository
 	}
 
 	repo.Submodules.Foreach(func(sub *git.Submodule, name string) int {
-		cmd.Logger.Debugf("resource/in: Submodule %s update to commit %s", name, sub.HeadId().String())
+		cmd.Logger.Debugf("resource/in: Submodule '%s' update to commit %s", name, sub.HeadId().String())
 
 		err := sub.Update(true, opts)
 
 		if err != nil {
-			cmd.Logger.Errorf("resource/in: Submodule %s update: %w", name, err)
-		} else {
-			cmd.Logger.Debugf("resource/in: Submodule %s updated", name)
+			cmd.Logger.Errorf("resource/in: Submodule '%s' update: %w", name, err)
+		}
+
+		repo, err := sub.Open()
+
+		if err != nil {
+			cmd.Logger.Errorf("resource/in: Submodule '%s' open: %w", name, err)
+		}
+
+		_, err = cmd.gitCheckoutDetachedHead(repo, sub.HeadId().String())
+
+		if err != nil {
+			cmd.Logger.Errorf("resource/in: Submodule '%s' detach head: %w", name, err)
 		}
 
 		return 0
 	})
+}
+
+func (cmd InCommand) gitCheckoutDetachedHead(repo *git.Repository, ref string) (*git.Commit, error) {
+	remote, err := repo.Remotes.Lookup("origin")
+
+	if err != nil {
+		return nil, fmt.Errorf("resource/in: Repo lookup origin remote: %w", err)
+	}
+
+	repoURL := remote.Url()
+
+	cmd.Logger.Debugf("resource/in: %s: Reverse parsing of a shorthand ref '%s'", repoURL, ref)
+
+	refObj, err := repo.RevparseSingle(ref)
+	if err != nil {
+		return nil, fmt.Errorf("resource/in: %s:  Repo revparseSingle: %w", repoURL, err)
+	}
+
+	cmd.Logger.Debugf("resource/in: %s: Looking up for a commit with id '%s'", repoURL, refObj.Id().String())
+
+	commit, err := repo.LookupCommit(refObj.Id())
+	if err != nil {
+		return nil, fmt.Errorf("resource/in: %s: LookupCommit: %w", repoURL, err)
+	}
+
+	err = repo.SetHeadDetached(commit.Id())
+	if err != nil {
+		return nil, fmt.Errorf("resource/in: %s: SetHeadDetached: %w", repoURL, err)
+	}
+
+	err = repo.CheckoutHead(&git.CheckoutOptions{Strategy: git.CheckoutForce})
+	if err != nil {
+		return nil, fmt.Errorf("resource/in: %s: CheckoutHead: %w", repoURL, err)
+	}
+
+	return commit, nil
 }
 
 // gitBranchOfCommit iterates over commits of every remote branch and compares its refs
