@@ -1,7 +1,7 @@
 FROM golang:1.15-alpine as builder
 
 RUN apk update && \
-    apk add --no-cache bash git openssh alpine-sdk libgit2-dev
+    apk add bash git openssh alpine-sdk libgit2-dev=1.1.0-r2
 
 WORKDIR /code
 
@@ -9,9 +9,9 @@ COPY . /code
 RUN mkdir -p ./bin && \
     go build -o ./bin ./...
 
-FROM alpine
+FROM alpine:3.14
 
 RUN apk update && \
-    apk add --no-cache libgit2
+    apk add libgit2=1.1.0-r2
 
 COPY --from=builder /code/bin/* /opt/resource/
